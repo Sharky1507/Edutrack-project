@@ -1,0 +1,55 @@
+
+{% block content %}
+<div class="header">
+    <h1><i class="fas fa-chart-line"></i> Assessment History</h1>
+</div>
+
+<div class="chart-container">
+    <canvas id="riskChart"></canvas>
+</div>
+div class="personalized-welcome">
+    <h2>Welcome back, {{ user.first_name }}!</h2>
+    <div class="learning-style-badge">
+        <i class="fas fa-{% if profile.learning_style == 'visual' %}eye{% elif profile.learning_style == 'auditory' %}headphones{% else %}hand-paper{% endif %}"></i>
+        {{ profile.get_learning_style_display }} Learner
+    </div>
+</div>
+
+<div class="goal-tracker">
+    <h3>Your Goals Progress</h3>
+    {% for goal in goals %}
+    <div class="goal-item">
+        <div class="goal-text">{{ goal.text }}</div>
+        <div class="progress-bar" style="width: {{ goal.progress }}%"></div>
+    </div>
+    {% endfor %}
+</div>
+<div class="assessments-list">
+    {% for assessment in assessments %}
+    <div class="assessment-card">
+        <h3>{{ assessment.timestamp|date:"M d, Y" }}</h3>
+        <div class="risk-badge {{ assessment.risk_status|slugify }}">
+            {{ assessment.risk_status }}
+        </div>
+        <button class="btn" onclick="toggleDetails({{ forloop.counter }})">
+            View Details
+        </button>
+        <div id="details-{{ forloop.counter }}" class="details-content">
+            <!-- Display assessment details -->
+        </div>
+    </div>
+    {% endfor %}
+    <!-- In dashboard.html -->
+    <div class="profile-link">
+        <a href="{% url 'profile' %}" class="btn btn-primary">
+            <i class="fas fa-user-edit"></i>
+            Edit Profile
+        </a>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // JavaScript for rendering charts
+</script>
+{% endblock %}

@@ -1,0 +1,396 @@
+{% csrf_token %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Assessment Result | EduTrack</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --secondary: #3b82f6;
+            --success: #10b981;
+            --danger: #ef4444;
+            --light: #f8fafc;
+            --dark: #1e293b;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: #f1f5f9;
+            color: var(--dark);
+            line-height: 1.6;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin: 2rem 0;
+            padding: 1.5rem;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .header h1 {
+            color: var(--primary);
+            margin: 0;
+            font-size: 2.2rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.8rem;
+        }
+
+        .result-card {
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            margin: 2rem auto;
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-weight: 600;
+            margin: 1rem 0;
+        }
+
+        .status-safe {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .status-risk {
+            background: #fee2e2;
+            color: #b91c1c;
+        }
+
+        .recommendations-list {
+            margin: 1.5rem 0;
+            padding-left: 0;
+            list-style: none;
+        }
+
+        .recommendation-item {
+            display: flex;
+            gap: 1rem;
+            padding: 1rem;
+            margin-bottom: 0.8rem;
+            background: var(--light);
+            border-radius: 8px;
+            border-left: 4px solid var(--primary);
+        }
+
+        .study-plan-section {
+            margin: 2rem 0;
+        }
+
+        .study-plan-output {
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            margin-top: 1.5rem;
+            max-height: 600px;
+            overflow-y: auto;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 1rem 2rem;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-decoration: none;
+            font-size: 1rem;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--secondary);
+            transform: translateY(-1px);
+        }
+
+        .print-btn {
+            margin-top: 1rem;
+            background: var(--success);
+            color: white;
+        }
+
+        /* Markdown Content Styles */
+        .markdown-content {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.7;
+            color: #333;
+            max-width: 100%;
+            overflow-wrap: break-word;
+        }
+
+        .markdown-content h1,
+        .markdown-content h2,
+        .markdown-content h3 {
+            color: var(--primary);
+            margin: 1.5em 0 0.8em;
+            padding-bottom: 0.3em;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .markdown-content ul {
+            padding-left: 1.8em;
+            list-style-type: none;
+        }
+
+        .markdown-content li {
+            margin-bottom: 0.8em;
+            position: relative;
+            padding-left: 1.5em;
+        }
+
+        .markdown-content li:before {
+            content: '•';
+            color: var(--primary);
+            position: absolute;
+            left: 0;
+            font-weight: bold;
+        }
+
+        .markdown-content strong {
+            color: #1e40af;
+            font-weight: 600;
+        }
+
+        .time-block {
+            background: #f0f4f8;
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            margin: 0.2rem 0;
+            display: inline-block;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            color: #2d3748;
+            border: 1px solid #cbd5e0;
+        }
+
+        #loading {
+            display: none;
+            text-align: center;
+            padding: 1rem;
+            color: var(--primary);
+        }
+
+        .plan-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        @media print {
+            body {
+                background: white;
+                padding: 0;
+            }
+            .study-plan-output {
+                max-height: none;
+                overflow: visible;
+                box-shadow: none;
+                padding: 0;
+            }
+            .no-print {
+                display: none;
+            }
+            .personality-quiz .btn-group {
+                display: grid;
+                grid-template-columns: repeat(3, 1fr);
+                gap: 1rem;
+        }
+
+        .learning-style-btn {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 1rem;
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            transition: all 0.3s ease;
+        }
+
+        .learning-style-btn.active {
+            border-color: var(--primary);
+            background: rgba(37, 99, 235, 0.1);
+        }
+
+        .learning-style-btn i {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>
+            <i class="fas fa-file-alt"></i>
+            Assessment Result
+        </h1>
+    </div>
+
+    <div class="result-card">
+        <div class="result-header">
+            <h2>Student Status</h2>
+            <span class="status-badge {% if prediction == 'At Risk' %}status-risk{% else %}status-safe{% endif %}">
+                <i class="fas fa-{% if prediction == 'At Risk' %}exclamation-triangle{% else %}check-circle{% endif %}"></i>
+                {{ prediction }}
+            </span>
+        </div>
+
+        {% if recommendations %}
+        <div class="recommendations">
+            <h3><i class="fas fa-lightbulb"></i> Recommendations</h3>
+            <ul class="recommendations-list">
+                {% for recommendation in recommendations %}
+                <li class="recommendation-item">
+                    <i class="fas fa-arrow-circle-right" style="color: var(--primary);"></i>
+                    {{ recommendation }}
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+
+        <div class="study-plan-section">
+            <button onclick="generateStudyPlan()" class="btn btn-primary">
+                <i class="fas fa-calendar-alt"></i>
+                Generate Study Plan
+            </button>
+            
+            <div id="study-plan-output" class="study-plan-output" style="display: none;">
+                <div class="plan-header">
+                    <h3><i class="fas fa-book-open"></i> Personalized Study Plan</h3>
+                    <button onclick="window.print()" class="btn print-btn no-print">
+                        <i class="fas fa-print"></i>
+                        Print Plan
+                    </button>
+                </div>
+                <div class="markdown-content" id="plan-content"></div>
+            </div>
+        </div>
+
+        <div id="loading">
+            <i class="fas fa-spinner fa-spin"></i> Generating study plan...
+        </div>
+        {% if user.is_authenticated %}
+        <a href="{% url 'dashboard' %}" class="btn no-print" style="margin-left: 10px;">
+            <i class="fas fa-tachometer-alt"></i>
+            Dashboard
+        </a>
+        {% endif %}
+        <a href="/" class="btn no-print">
+            <i class="fas fa-redo"></i>
+            New Assessment
+        </a>
+    </div>
+
+    <script>
+    function cleanMarkdown(content) {
+        // Fix common markdown issues
+        return content
+            .replace(/\*\*/g, '<strong>').replace(/\*\*/g, '</strong>')
+            .replace(/-\s*\*/g, '-')
+            .replace(/\n\s*\n/g, '\n\n')
+            .replace(/(\d+:\d+\s[AP]M[^<]*)/g, '<span class="time-block">$1</span>');
+    }
+    function getCSRFToken() {
+        let cookieValue = null;
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.startsWith('csrftoken=')) {
+                cookieValue = cookie.substring('csrftoken='.length, cookie.length);
+                break;
+            }
+        }
+        return cookieValue;
+}
+
+    function generateStudyPlan() {
+        const outputDiv = document.getElementById('study-plan-output');
+        const loading = document.getElementById('loading');
+        const contentDiv = document.getElementById('plan-content');
+        
+        loading.style.display = 'block';
+        outputDiv.style.display = 'none';
+        contentDiv.innerHTML = '';
+
+        const formData = new FormData();
+        formData.append('assessment_id', '{{ assessment_id }}');
+        formData.append('prediction', '{{ prediction }}');
+        formData.append('study_time', '{{ form_data.study_time }}');
+        formData.append('absences', '{{ form_data.absences }}');
+        
+        {% if 'sports' in form_data %}
+        formData.append('sports', 'on');
+        {% endif %}
+        {% if 'music' in form_data %}
+        formData.append('music', 'on');
+        {% endif %}
+        {% if 'volunteer' in form_data %}
+        formData.append('volunteer', 'on');
+        {% endif %}
+        
+        {% for rec in recommendations %}
+        formData.append('recommendations', '{{ rec }}');
+        {% endfor %}
+        fetch('/generate-study-plan/', {
+        
+            headers: {
+        'X-CSRFToken': getCSRFToken()  // Include CSRF token in the headers
+    },
+            
+            method: 'POST',
+            body: formData
+        })
+        .then(response => {
+            if (!response.ok) throw new Error('Network response was not ok');
+            return response.json();
+        })
+        .then(data => {
+            if(data.status === 'success') {
+                const cleanedContent = cleanMarkdown(data.study_plan);
+                contentDiv.innerHTML = marked.parse(cleanedContent);
+                outputDiv.style.display = 'block';
+            } else {
+                contentDiv.innerHTML = `<p style="color: var(--danger);">${data.study_plan}</p>`;
+                outputDiv.style.display = 'block';
+            }
+        })
+        .catch(error => {
+            contentDiv.innerHTML = `<p style="color: var(--danger);">Error: ${error.message}</p>`;
+            outputDiv.style.display = 'block';
+        })
+        .finally(() => {
+            loading.style.display = 'none';
+        });
+    }
+    </script>
+</body>
+</html>

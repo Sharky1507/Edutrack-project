@@ -1,0 +1,435 @@
+{% extends 'base.html' %}
+
+{% block title %}Resource Library | EduTrack{% endblock %}
+
+{% block extra_css %}
+<style>
+    .resource-container {
+        max-width: 1100px;
+        margin: 0 auto;
+        padding: 2rem 1rem;
+    }
+    
+    .resource-header {
+        text-align: center;
+        margin-bottom: 2rem;
+    }
+    
+    .filter-section {
+        background: white;
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    
+    .filter-form {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
+    
+    .filter-group {
+        flex: 1 1 200px;
+    }
+    
+    .resources-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 1.5rem;
+        margin-top: 2rem;
+    }
+    
+    .resource-card {
+        background: white;
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        transition: all 0.3s ease;
+        height: 100%;
+        max-height: 380px;
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .resource-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 15px rgba(0,0,0,0.1);
+    }
+    
+    .resource-thumbnail {
+        height: 140px;
+        background-size: cover;
+        background-position: center;
+        background-color: #f1f5f9;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .resource-thumbnail i {
+        font-size: 3rem;
+        color: var(--primary);
+    }
+    
+    .resource-content {
+        padding: 1rem;
+        display: flex;
+        flex-direction: column;
+        height: calc(100% - 140px);
+        flex-grow: 1;
+    }
+    
+    .resource-title {
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+        color: var(--dark);
+        font-size: 1.1rem;
+    }
+    
+    .resource-meta {
+        color: #64748b;
+        font-size: 0.9rem;
+        margin-bottom: 1rem;
+    }
+    
+    .resource-description {
+        color: #334155;
+        overflow: hidden;
+        display: -webkit-box;
+        -webkit-line-clamp: 3;
+        -webkit-box-orient: vertical;
+        margin-bottom: 0.5rem;
+        flex-grow: 1;
+    }
+    
+    .resource-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding-top: 1rem;
+        border-top: 1px solid #e2e8f0;
+        margin-top: auto;
+    }
+    
+    .tag {
+        background: #f1f5f9;
+        padding: 0.25rem 0.5rem;
+        border-radius: 4px;
+        font-size: 0.75rem;
+        color: #64748b;
+    }
+    
+    .badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.25rem 0.75rem;
+        border-radius: 9999px;
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+    
+    .badge-primary {
+        background: #e0f2fe;
+        color: #0369a1;
+    }
+    
+    .badge-success {
+        background: #dcfce7;
+        color: #15803d;
+    }
+    
+    .badge-warning {
+        background: #fef3c7;
+        color: #92400e;
+    }
+    
+    .section-title {
+        display: flex;
+        align-items: center;
+        margin-bottom: 1rem;
+        font-size: 1.25rem;
+        color: var(--dark);
+    }
+    
+    .section-title i {
+        margin-right: 0.5rem;
+        color: var(--primary);
+    }
+    
+    /* Resource tabs styling */
+    .resource-tabs {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        margin: 1.5rem 0;
+    }
+    
+    .tab-btn {
+        padding: 0.5rem 1rem;
+        background: #f1f5f9;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-weight: 500;
+        transition: all 0.2s ease;
+    }
+    
+    .tab-btn.active {
+        background: var(--primary);
+        color: white;
+    }
+    
+    /* Pagination styling */
+    .pagination {
+        display: flex;
+        justify-content: center;
+        gap: 0.5rem;
+        margin-top: 2rem;
+    }
+    
+    .pagination a, .pagination span {
+        padding: 0.5rem 1rem;
+        border: 1px solid #e2e8f0;
+        border-radius: 4px;
+        text-decoration: none;
+    }
+    
+    .pagination .current {
+        background: var(--primary);
+        color: white;
+        border-color: var(--primary);
+    }
+    
+    /* For video grid */
+    .videos-row {
+        display: flex;
+        overflow-x: auto;
+        gap: 1rem;
+        padding-bottom: 1rem;
+        margin-bottom: 2rem;
+    }
+    
+    .videos-row .resource-card {
+        min-width: 280px;
+        max-width: 320px;
+        flex: 0 0 auto;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="resource-container">
+    <div class="resource-header">
+        <h1><i class="fas fa-book-open"></i> Resource Library</h1>
+        <p>Find study materials, tutorials, and tools to support your learning journey</p>
+    </div>
+    
+    <!-- Filter Section -->
+    <div class="filter-section">
+        <form method="get" class="filter-form">
+            <div class="filter-group">
+                <label for="category">Category</label>
+                <select name="category" id="category" class="form-control">
+                    <option value="">All Categories</option>
+                    {% for category in categories %}
+                        <option value="{{ category.id }}" {% if filters.category == category.id|stringformat:"i" %}selected{% endif %}>
+                            {{ category.name }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="filter-group">
+                <label for="subject">Subject</label>
+                <select name="subject" id="subject" class="form-control">
+                    <option value="">All Subjects</option>
+                    {% for subject in subjects %}
+                        <option value="{{ subject.id }}" {% if filters.subject == subject.id|stringformat:"i" %}selected{% endif %}>
+                            {{ subject.name }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="filter-group">
+                <label for="difficulty">Difficulty</label>
+                <select name="difficulty" id="difficulty" class="form-control">
+                    <option value="">All Levels</option>
+                    <option value="beginner" {% if filters.difficulty == 'beginner' %}selected{% endif %}>Beginner</option>
+                    <option value="intermediate" {% if filters.difficulty == 'intermediate' %}selected{% endif %}>Intermediate</option>
+                    <option value="advanced" {% if filters.difficulty == 'advanced' %}selected{% endif %}>Advanced</option>
+                </select>
+            </div>
+            
+            <div class="filter-group">
+                <label for="type">Type</label>
+                <select name="type" id="type" class="form-control">
+                    <option value="">All Types</option>
+                    <option value="video" {% if filters.type == 'video' %}selected{% endif %}>Video</option>
+                    <option value="article" {% if filters.type == 'article' %}selected{% endif %}>Article</option>
+                    <option value="book" {% if filters.type == 'book' %}selected{% endif %}>Book</option>
+                    <option value="exercise" {% if filters.type == 'exercise' %}selected{% endif %}>Exercise</option>
+                    <option value="quiz" {% if filters.type == 'quiz' %}selected{% endif %}>Quiz</option>
+                    <option value="tool" {% if filters.type == 'tool' %}selected{% endif %}>Tool</option>
+                </select>
+            </div>
+            
+            <div class="filter-group" style="flex-grow: 2;">
+                <label for="q">Search</label>
+                <div style="display: flex;">
+                    <input type="text" name="q" id="q" class="form-control" placeholder="Search resources..." value="{{ filters.query }}">
+                    <button type="submit" class="btn btn-primary" style="margin-left: 0.5rem;">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+    
+    <!-- Resource Tabs -->
+    <div class="resource-tabs">
+        <button class="tab-btn active" data-type="all">All</button>
+        <button class="tab-btn" data-type="video">Videos</button>
+        <button class="tab-btn" data-type="article">Articles</button>
+        <button class="tab-btn" data-type="exercise">Exercises</button>
+        <button class="tab-btn" data-type="quiz">Quizzes</button>
+    </div>
+    
+    <!-- Recommended Resources -->
+    {% if recommended_resources %}
+        <div class="recommendation-section">
+            <h2 class="section-title"><i class="fas fa-star"></i> Recommended for You</h2>
+            <div class="resources-grid">
+                {% for resource in recommended_resources %}
+                    {% include 'resource_card.html' with resource=resource %}
+                {% endfor %}
+            </div>
+        </div>
+    {% endif %}
+    
+    <!-- Recently Viewed -->
+    {% if recent_resources %}
+        <div class="recent-section">
+            <h2 class="section-title"><i class="fas fa-history"></i> Recently Viewed</h2>
+            <div class="resources-grid">
+                {% for resource in recent_resources %}
+                    {% include 'resource_card.html' with resource=resource %}
+                {% endfor %}
+            </div>
+        </div>
+    {% endif %}
+
+    
+    <!-- All Resources section -->
+    <h2 class="section-title"><i class="fas fa-book"></i> Browse Resources</h2>
+
+    {% if resources %}
+        <div class="resources-grid">
+            {% for resource in resources %}
+                {% include 'resource_card.html' with resource=resource %}
+            {% endfor %}
+        </div>
+        
+        <!-- Pagination -->
+        {% if resources.paginator.num_pages > 1 %}
+        <div class="pagination">
+            {% if resources.has_previous %}
+                <a href="?page=1{% for key, value in filters.items %}{% if value %}&{{ key }}={{ value }}{% endif %}{% endfor %}">&laquo; first</a>
+                <a href="?page={{ resources.previous_page_number }}{% for key, value in filters.items %}{% if value %}&{{ key }}={{ value }}{% endif %}{% endfor %}">&lsaquo; previous</a>
+            {% endif %}
+            
+            <span class="current">
+                Page {{ resources.number }} of {{ resources.paginator.num_pages }}
+            </span>
+            
+            {% if resources.has_next %}
+                <a href="?page={{ resources.next_page_number }}{% for key, value in filters.items %}{% if value %}&{{ key }}={{ value }}{% endif %}{% endfor %}">next &rsaquo;</a>
+                <a href="?page={{ resources.paginator.num_pages }}{% for key, value in filters.items %}{% if value %}&{{ key }}={{ value }}{% endif %}{% endfor %}">last &raquo;</a>
+            {% endif %}
+        </div>
+        {% endif %}
+        
+    {% else %}
+        <div class="empty-state">
+            <p>No resources found matching your criteria.</p>
+            <a href="{% url 'resource_library' %}" class="btn btn-primary">
+                <i class="fas fa-sync"></i> Clear Filters
+            </a>
+        </div>
+    {% endif %}
+    
+    <!-- Staff Upload Button -->
+    {% if user.is_staff %}
+        <div style="text-align: center; margin-top: 2rem;">
+            <a href="{% url 'upload_resource' %}" class="btn btn-primary">
+                <i class="fas fa-plus"></i> Add New Resource
+            </a>
+        </div>
+    {% endif %}
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Tab functionality
+        const tabButtons = document.querySelectorAll('.tab-btn');
+        const resourceCards = document.querySelectorAll('.resource-card');
+        
+        tabButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                // Update active button
+                tabButtons.forEach(btn => btn.classList.remove('active'));
+                button.classList.add('active');
+                
+                const type = button.dataset.type;
+                
+                // Show/hide resources based on type
+                resourceCards.forEach(card => {
+                    if (type === 'all') {
+                        card.style.display = 'block';
+                    } else {
+                        const cardType = card.dataset.type;
+                        card.style.display = cardType === type ? 'block' : 'none';
+                    }
+                });
+            });
+        });
+        
+        <!-- Add to resource_library.html where you have your organizeVideoResources function -->
+function organizeVideoResources() {
+    const sections = document.querySelectorAll('.resources-grid');
+    
+    sections.forEach(section => {
+        // Get all video resources in this section
+        const videoResources = [...section.querySelectorAll('.resource-card[data-type="video"]')];
+        
+        if (videoResources.length > 0) {
+            // Create a horizontal scroll container for videos
+            const videosRow = document.createElement('div');
+            videosRow.className = 'videos-row';
+            
+            // Add a heading
+            const heading = document.createElement('h3');
+            heading.className = 'videos-heading';
+            heading.innerHTML = '<i class="fas fa-video"></i> Videos';
+            section.parentNode.insertBefore(heading, section);
+            
+            // Move video cards to the horizontal container
+            videoResources.forEach(video => {
+                // Remove from grid
+                video.parentNode.removeChild(video);
+                // Add to row
+                videosRow.appendChild(video);
+            });
+            
+            // Insert the videos row before the grid
+            section.parentNode.insertBefore(videosRow, section);
+        }
+    });
+}
+        
+        // Call the function to reorganize videos
+        organizeVideoResources();
+    });
+</script>
+{% endblock %}

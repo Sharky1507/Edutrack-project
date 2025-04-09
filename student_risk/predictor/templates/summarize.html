@@ -1,0 +1,175 @@
+{% extends 'base.html' %}
+
+{% block title %}Content Summarization | EduTrack{% endblock %}
+
+{% block extra_head %}
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .summarize-container {
+        max-width: 900px;
+        margin: 0 auto;
+        padding: 2rem 1rem;
+    }
+    
+    .form-card {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        padding: 2rem;
+        margin-bottom: 2rem;
+    }
+    
+    .summary-result {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        padding: 2rem;
+        margin-top: 2rem;
+        display: none;
+    }
+    
+    .summary-content {
+        line-height: 1.6;
+    }
+    
+    .form-group {
+        margin-bottom: 1.5rem;
+    }
+    
+    .form-group label {
+        display: block;
+        margin-bottom: 0.5rem;
+        font-weight: 500;
+    }
+    
+    .form-control {
+        width: 100%;
+        padding: 0.75rem;
+        border: 1px solid #cbd5e1;
+        border-radius: 6px;
+        font-size: 1rem;
+    }
+    
+    .loader {
+        display: none;
+        text-align: center;
+        margin: 2rem 0;
+    }
+    
+    .spinner {
+        border: 4px solid #f3f3f3;
+        border-top: 4px solid var(--primary);
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        animation: spin 1s linear infinite;
+        margin: 0 auto;
+    }
+    
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="summarize-container">
+    <h1><i class="fas fa-compress-alt"></i> Content Summarization Tool</h1>
+    <p>Paste text or an article to get an AI-generated summary that focuses on key points.</p>
+    
+    <div class="form-card">
+        <div class="form-group">
+            <label for="subject">Subject Area</label>
+            <select id="subject" class="form-control">
+                <option value="">General (No specific subject)</option>
+                <option value="math">Mathematics</option>
+                <option value="science">Science</option>
+                <option value="history">History</option>
+                <option value="literature">Literature</option>
+                <option value="computer_science">Computer Science</option>
+                <option value="economics">Economics</option>
+                <option value="psychology">Psychology</option>
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label for="content">Content to Summarize</label>
+            <textarea id="content" class="form-control" rows="12" placeholder="Paste the content you want to summarize here..."></textarea>
+        </div>
+        
+        <div class="text-center">
+            <button onclick="summarizeContent()" class="btn btn-primary">
+                <i class="fas fa-magic"></i> Generate Summary
+            </button>
+        </div>
+    </div>
+    
+    <div class="loader" id="loader">
+        <div class="spinner"></div>
+        <p>Generating summary...</p>
+    </div>
+    
+    <div class="summary-result" id="summary-result">
+        <h2>Summary</h2>
+        <div class="summary-content" id="summary-content"></div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function summarizeContent() {
+        const content = document.getElementById('content').value.trim();
+        const subject = document.getElementById('subject').value;
+        
+        if (!content) {
+            alert('Please enter some content to summarize');
+            return;
+        }
+        
+        // Show loader
+        document.getElementById('loader').style.display = 'block';
+        document.getElementById('summary-result').style.display = 'none';
+        
+        // Send to server
+        fetch('/summarize-content/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify({
+                content: content,
+                subject: subject
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            // Hide loader
+            document.getElementById('loader').style.display = 'none';
+            
+            if (data.status === 'success') {
+                // Show result
+                document.getElementById('summary-result').style.display = 'block';
+                
+                // Convert markdown to HTML
+                document.getElementById('summary-content').innerHTML = marked.parse(data.summary);
+                
+                // Scroll to result
+                document.getElementById('summary-result').scrollIntoView({behavior: 'smooth'});
+            } else {
+                alert('Error: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            document.getElementById('loader').style.display = 'none';
+            alert('An error occurred while generating the summary.');
+        });
+    }
+</script>
+{% endblock %}

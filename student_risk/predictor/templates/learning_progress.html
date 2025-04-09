@@ -1,0 +1,360 @@
+{% extends 'base.html' %}
+
+{% block title %}Learning Progress | EduTrack{% endblock %}
+
+{% block extra_css %}
+<style>
+    .progress-container {
+        max-width: 1100px;
+        margin: 0 auto;
+        padding: 2rem 1rem;
+    }
+    
+    .metrics-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+    
+    .metric-card {
+        background: white;
+        border-radius: 12px;
+        padding: 1.5rem;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        text-align: center;
+    }
+    
+    .metric-value {
+        font-size: 2rem;
+        font-weight: 700;
+        color: var(--primary);
+        margin-bottom: 0.5rem;
+    }
+    
+    .metric-label {
+        color: #64748b;
+        font-size: 0.9rem;
+    }
+    
+    .progress-section {
+        background: white;
+        border-radius: 12px;
+        padding: 1.5rem;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        margin-bottom: 2rem;
+    }
+    
+    .section-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+    }
+    
+    .section-title {
+        font-size: 1.25rem;
+        font-weight: 600;
+    }
+    
+    .resources-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 1.5rem;
+    }
+    
+    .streak-container {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+    }
+    
+    .streak-flame {
+        font-size: 2.5rem;
+        color: #f97316;
+        margin-bottom: 0.5rem;
+    }
+    
+    .progress-list {
+        margin-top: 1.5rem;
+    }
+    
+    .progress-item {
+        background: #f8fafc;
+        border-radius: 8px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .item-info {
+        flex: 1;
+    }
+    
+    .item-title {
+        font-weight: 500;
+        margin-bottom: 0.25rem;
+    }
+    
+    .item-meta {
+        color: #64748b;
+        font-size: 0.85rem;
+    }
+    
+    .item-progress {
+        width: 120px;
+    }
+    
+    .progress-bar {
+        height: 8px;
+        background: #e2e8f0;
+        border-radius: 4px;
+        overflow: hidden;
+        margin-bottom: 0.25rem;
+    }
+    
+    .progress-fill {
+        height: 100%;
+        background: var(--primary);
+    }
+    
+    .goals-section {
+        margin-top: 2rem;
+    }
+    
+    .goal-progress {
+        height: 8px;
+        background: #e2e8f0;
+        border-radius: 4px;
+        overflow: hidden;
+        margin-bottom: 0.5rem;
+    }
+    
+    .chart-container {
+        height: 300px;
+        width: 100%;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="progress-container">
+    <h1><i class="fas fa-chart-line"></i> Learning Progress</h1>
+    <p class="text-muted">Track your resource completion and study habits</p>
+    
+    <!-- Top Metrics -->
+    <div class="metrics-grid">
+        <div class="metric-card">
+            <div class="metric-value">{{ metrics.resources_completed }}</div>
+            <div class="metric-label">Resources Completed</div>
+        </div>
+        
+        <div class="metric-card">
+            <div class="metric-value">{{ metrics.resources_viewed }}</div>
+            <div class="metric-label">Resources Viewed</div>
+        </div>
+        
+        <div class="metric-card">
+            <div class="metric-value">{{ progress_percent }}%</div>
+            <div class="metric-label">Completion Rate</div>
+        </div>
+        
+        <div class="metric-card">
+            <div class="streak-container">
+                <div class="streak-flame"><i class="fas fa-fire"></i></div>
+                <div class="metric-value">{{ metrics.current_streak }}</div>
+                <div class="metric-label">Day Streak</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Weekly Study Time -->
+    <div class="progress-section">
+        <div class="section-header">
+            <h2 class="section-title"><i class="fas fa-calendar-week"></i> Weekly Study Time</h2>
+            <a href="{% url 'analytics_dashboard' %}" class="btn btn-outline-primary btn-sm">
+                View Detailed Analytics
+            </a>
+        </div>
+        
+        <div class="chart-container">
+            <canvas id="weeklyChart"></canvas>
+        </div>
+    </div>
+    
+    <!-- In Progress Resources -->
+    <div class="progress-section">
+        <div class="section-header">
+            <h2 class="section-title"><i class="fas fa-spinner"></i> In Progress</h2>
+        </div>
+        
+        {% if in_progress_resources %}
+            <div class="progress-list">
+                {% for progress in in_progress_resources %}
+                    <div class="progress-item">
+                        <div class="item-info">
+                            <div class="item-title">
+                                <a href="{% url 'resource_detail' resource_id=progress.resource.id %}">
+                                    {{ progress.resource.title }}
+                                </a>
+                            </div>
+                            <div class="item-meta">
+                                {{ progress.resource.get_resource_type_display }} • {{ progress.resource.category.name }} •
+                                Last accessed: {{ progress.last_accessed|date:"M d, Y" }}
+                            </div>
+                        </div>
+                        <div class="item-progress">
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: {{ progress.progress_percent }}%"></div>
+                            </div>
+                            <div class="text-end text-muted small">{{ progress.progress_percent }}%</div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="empty-state">
+                <p>You don't have any resources in progress.</p>
+                <a href="{% url 'resource_library' %}" class="btn btn-primary">
+                    <i class="fas fa-book"></i> Browse Resources
+                </a>
+            </div>
+        {% endif %}
+    </div>
+    
+    <!-- Recently Completed -->
+    <div class="progress-section">
+        <div class="section-header">
+            <h2 class="section-title"><i class="fas fa-check-circle"></i> Recently Completed</h2>
+        </div>
+        
+        {% if completed_resources %}
+            <div class="progress-list">
+                {% for progress in completed_resources|slice:":5" %}
+                    <div class="progress-item">
+                        <div class="item-info">
+                            <div class="item-title">
+                                <a href="{% url 'resource_detail' resource_id=progress.resource.id %}">
+                                    {{ progress.resource.title }}
+                                </a>
+                            </div>
+                            <div class="item-meta">
+                                {{ progress.resource.get_resource_type_display }} • {{ progress.resource.category.name }} •
+                                Completed: {{ progress.completion_date|date:"M d, Y" }}
+                            </div>
+                        </div>
+                        <div>
+                            <span class="badge badge-success">
+                                <i class="fas fa-check"></i> Completed
+                            </span>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="empty-state">
+                <p>You haven't completed any resources yet.</p>
+                <a href="{% url 'resource_library' %}" class="btn btn-primary">
+                    <i class="fas fa-book"></i> Browse Resources
+                </a>
+            </div>
+        {% endif %}
+    </div>
+    
+    <!-- Weekly Goals -->
+    <div class="progress-section goals-section">
+        <div class="section-header">
+            <h2 class="section-title"><i class="fas fa-bullseye"></i> Weekly Goals</h2>
+            <a href="{% url 'set_weekly_goals' %}" class="btn btn-outline-primary btn-sm">
+                <i class="fas fa-edit"></i> Update Goals
+            </a>
+        </div>
+        
+        {% if metrics.weekly_goals %}
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="goal-item">
+                        <label>Study Time: {{ weekly_goals_progress.minutes_achieved }} / {{ metrics.weekly_goals.minutes }} minutes</label>
+                        <div class="goal-progress">
+                            <div class="progress-fill" style="width: {{ weekly_goals_progress.minutes_percent }}%"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-6">
+                    <div class="goal-item">
+                        <label>Resources completed: {{ weekly_goals_progress.resources_achieved }} / {{ metrics.weekly_goals.resources }}</label>
+                        <div class="goal-progress">
+                            <div class="progress-fill" style="width: {{ weekly_goals_progress.resources_percent }}%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% else %}
+            <p>You haven't set any weekly goals yet.</p>
+            <a href="{% url 'set_weekly_goals' %}" class="btn btn-primary">
+                <i class="fas fa-plus"></i> Set Weekly Goals
+            </a>
+        {% endif %}
+    </div>
+    
+    <!-- Recommended Resources -->
+    {% if recommended_resources %}
+        <div class="progress-section">
+            <div class="section-header">
+                <h2 class="section-title"><i class="fas fa-star"></i> Recommended Next</h2>
+            </div>
+            
+            <div class="resources-grid">
+                {% for resource in recommended_resources %}
+                    {% include 'resource_card.html' with resource=resource %}
+                {% endfor %}
+            </div>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Weekly chart
+        const weeklyData = {{ weekly_data|safe }};
+        const ctx = document.getElementById('weeklyChart').getContext('2d');
+        
+        const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+        const values = days.map(day => weeklyData[day] || 0);
+        
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: days,
+                datasets: [{
+                    label: 'Study Time (minutes)',
+                    data: values,
+                    backgroundColor: 'rgba(14, 165, 233, 0.6)',
+                    borderColor: 'rgba(14, 165, 233, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Minutes'
+                        }
+                    }
+                }
+            }
+        });
+    });
+</script>
+{% endblock %}

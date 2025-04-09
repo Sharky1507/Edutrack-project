@@ -1,0 +1,160 @@
+{% extends 'base.html' %}
+
+{% block title %}Upload Resource | EduTrack{% endblock %}
+
+{% block extra_css %}
+<style>
+    .upload-container {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 2rem 1rem;
+    }
+    
+    .form-card {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        padding: 2rem;
+    }
+    
+    .form-group {
+        margin-bottom: 1.5rem;
+    }
+    
+    .form-group label {
+        display: block;
+        margin-bottom: 0.5rem;
+        font-weight: 500;
+    }
+    
+    .form-control {
+        width: 100%;
+        padding: 0.75rem;
+        border: 1px solid #cbd5e1;
+        border-radius: 6px;
+        font-size: 1rem;
+    }
+    
+    .checkbox-group {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem;
+        margin-top: 0.5rem;
+    }
+    
+    .checkbox-item {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="upload-container">
+    <h1><i class="fas fa-upload"></i> Upload New Resource</h1>
+    
+    {% if messages %}
+        <div class="messages">
+            {% for message in messages %}
+                <div class="alert {% if message.tags %}alert-{{ message.tags }}{% endif %}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+    
+    <div class="form-card">
+        <form method="post" action="{% url 'upload_resource' %}">
+            {% csrf_token %}
+            
+            <div class="form-group">
+                <label for="title">Title*</label>
+                <input type="text" id="title" name="title" class="form-control" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="description">Description*</label>
+                <textarea id="description" name="description" class="form-control" rows="4" required></textarea>
+            </div>
+            
+            <div class="form-group">
+                <label for="url">Resource URL*</label>
+                <input type="url" id="url" name="url" class="form-control" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="thumbnail">Thumbnail URL (optional)</label>
+                <input type="url" id="thumbnail" name="thumbnail" class="form-control">
+                <small class="text-muted">Direct link to an image that represents this resource</small>
+            </div>
+            
+            <div class="form-group">
+                <label for="category">Category*</label>
+                <select id="category" name="category" class="form-control" required>
+                    <option value="">Select a category</option>
+                    {% for category in categories %}
+                        <option value="{{ category.id }}">{{ category.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="subjects">Subjects*</label>
+                <div class="checkbox-group">
+                    {% for subject in subjects %}
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="subject_{{ subject.id }}" name="subjects" value="{{ subject.id }}">
+                            <label for="subject_{{ subject.id }}">{{ subject.name }}</label>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label for="difficulty">Difficulty Level*</label>
+                <select id="difficulty" name="difficulty" class="form-control" required>
+                    <option value="">Select difficulty</option>
+                    {% for value, label in difficulty_choices %}
+                        <option value="{{ value }}">{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="resource_type">Resource Type*</label>
+                <select id="resource_type" name="resource_type" class="form-control" required>
+                    <option value="">Select type</option>
+                    {% for value, label in type_choices %}
+                        <option value="{{ value }}">{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label>Learning Styles This Resource Supports</label>
+                <div class="checkbox-group">
+                    {% for value, label in learning_style_choices %}
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="style_{{ value }}" name="learning_styles" value="{{ value }}">
+                            <label for="style_{{ value }}">{{ label }}</label>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label for="keywords">Keywords</label>
+                <input type="text" id="keywords" name="keywords" class="form-control">
+                <small class="text-muted">Comma-separated keywords related to this resource</small>
+            </div>
+            
+            <div class="text-center">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-upload"></i> Upload Resource
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,309 @@
+<!-- Create a new template file: subject_chat.html -->
+{% extends 'base.html' %}
+
+{% block title %}Subject Tutors | EduTrack{% endblock %}
+
+{% block extra_css %}
+{% block extra_head %}
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+{% endblock %}
+<style>
+    .tutor-container {
+        max-width: 1100px;
+        margin: 0 auto;
+        padding: 2rem 1rem;
+    }
+    
+    .tutor-header {
+        text-align: center;
+        margin-bottom: 3rem;
+    }
+    
+    .subjects-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+        gap: 1.5rem;
+    }
+    
+    .subject-card {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        padding: 2rem;
+        text-align: center;
+        transition: all 0.3s ease;
+        cursor: pointer;
+    }
+    
+    .subject-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 15px rgba(0,0,0,0.1);
+    }
+    
+    .subject-icon {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+        color: var(--primary);
+    }
+    
+    .chat-interface {
+        display: none;
+        margin-top: 2rem;
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        overflow: hidden;
+    }
+    
+    .chat-header {
+        background: var(--primary);
+        color: white;
+        padding: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+    
+    .chat-messages {
+        height: 400px;
+        overflow-y: auto;
+        padding: 1rem;
+    }
+    
+    .chat-input {
+        display: flex;
+        padding: 1rem;
+        border-top: 1px solid #eee;
+    }
+    
+    .chat-input input {
+        flex: 1;
+        padding: 0.75rem;
+        border: 1px solid #ddd;
+        border-radius: 6px 0 0 6px;
+    }
+    
+    .chat-input button {
+        padding: 0.75rem 1.5rem;
+        background: var(--primary);
+        color: white;
+        border: none;
+        border-radius: 0 6px 6px 0;
+        cursor: pointer;
+    }
+    
+    .message {
+        margin-bottom: 1rem;
+        max-width: 80%;
+    }
+    
+    .user-message {
+        margin-left: auto;
+        background: #e3f2fd;
+        padding: 0.75rem;
+        border-radius: 12px 12px 0 12px;
+    }
+    
+    .bot-message {
+        margin-right: auto;
+        background: #f1f1f1;
+        padding: 0.75rem;
+        border-radius: 0 12px 12px 12px;
+    }
+    /* Add these styles to your existing style block */
+.markdown-content {
+    line-height: 1.6;
+}
+
+.markdown-content h1, 
+.markdown-content h2, 
+.markdown-content h3 {
+    margin-top: 1rem;
+    margin-bottom: 0.5rem;
+    color: var(--primary);
+}
+
+.markdown-content code {
+    background-color: #f1f1f1;
+    padding: 0.2rem 0.4rem;
+    border-radius: 3px;
+    font-family: monospace;
+}
+
+.markdown-content pre {
+    background-color: #f1f1f1;
+    padding: 1rem;
+    border-radius: 5px;
+    overflow-x: auto;
+}
+
+.markdown-content ul, 
+.markdown-content ol {
+    padding-left: 2rem;
+}
+
+.markdown-content blockquote {
+    border-left: 4px solid #e2e8f0;
+    padding-left: 1rem;
+    color: #64748b;
+    font-style: italic;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="tutor-container">
+    <div class="tutor-header">
+        <h1><i class="fas fa-chalkboard-teacher"></i> Subject Tutors</h1>
+        <p>Choose a subject to get specialized help from our AI tutors</p>
+    </div>
+    
+    <div class="subjects-grid">
+        <div class="subject-card" onclick="selectSubject('math', 'Mathematics', 'fas fa-square-root-alt')">
+            <div class="subject-icon"><i class="fas fa-square-root-alt"></i></div>
+            <h2>Mathematics</h2>
+            <p>Algebra, Calculus, Geometry and more</p>
+        </div>
+        
+        <div class="subject-card" onclick="selectSubject('science', 'Science', 'fas fa-flask')">
+            <div class="subject-icon"><i class="fas fa-flask"></i></div>
+            <h2>Science</h2>
+            <p>Biology, Chemistry, Physics and more</p>
+        </div>
+        
+        <div class="subject-card" onclick="selectSubject('english', 'English', 'fas fa-book')">
+            <div class="subject-icon"><i class="fas fa-book"></i></div>
+            <h2>English</h2>
+            <p>Literature, Writing, Grammar and more</p>
+        </div>
+        
+        <div class="subject-card" onclick="selectSubject('history', 'History & Social Studies', 'fas fa-landmark')">
+            <div class="subject-icon"><i class="fas fa-landmark"></i></div>
+            <h2>History</h2>
+            <p>World History, Geography, Civics and more</p>
+        </div>
+        
+        <div class="subject-card" onclick="selectSubject('languages', 'Foreign Languages', 'fas fa-language')">
+            <div class="subject-icon"><i class="fas fa-language"></i></div>
+            <h2>Languages</h2>
+            <p>Spanish, French, German and more</p>
+        </div>
+        
+        <div class="subject-card" onclick="selectSubject('computer', 'Computer Science', 'fas fa-laptop-code')">
+            <div class="subject-icon"><i class="fas fa-laptop-code"></i></div>
+            <h2>Computer Science</h2>
+            <p>Programming, Web Dev, Algorithms and more</p>
+        </div>
+    </div>
+    
+    <div class="chat-interface" id="chat-interface">
+        <div class="chat-header">
+            <i id="subject-icon" class=""></i>
+            <h3 id="subject-title">Subject Tutor</h3>
+        </div>
+        
+        <div class="chat-messages" id="chat-messages">
+            <!-- Messages will appear here -->
+        </div>
+        
+        <div class="chat-input">
+            <input type="text" id="user-input" placeholder="Ask your question...">
+            <button onclick="sendMessage()"><i class="fas fa-paper-plane"></i></button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    let currentSubject = '';
+    
+    // Select a subject and initialize chat
+    function selectSubject(subject, title, icon) {
+        currentSubject = subject;
+        
+        // Update header
+        document.getElementById('subject-title').textContent = title + " Tutor";
+        document.getElementById('subject-icon').className = icon;
+        
+        // Show chat interface
+        document.getElementById('chat-interface').style.display = 'block';
+        
+        // Scroll to chat
+        document.getElementById('chat-interface').scrollIntoView({behavior: 'smooth'});
+        
+        // Clear previous messages
+        document.getElementById('chat-messages').innerHTML = '';
+        
+        // Add welcome message
+        addBotMessage(`Welcome to the ${title} Tutor! I'm specialized in helping with ${title} topics. What would you like help with today?`);
+    }
+    
+    // Add user message to chat
+    function addUserMessage(message) {
+        const chatMessages = document.getElementById('chat-messages');
+        chatMessages.innerHTML += `
+            <div class="message user-message">
+                <strong>You:</strong> ${message}
+            </div>
+        `;
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+    
+    // Add bot message to chat
+    function addBotMessage(message) {
+        const chatMessages = document.getElementById('chat-messages');
+        chatMessages.innerHTML += `
+            <div class="message bot-message">
+                <strong>Tutor:</strong> <span class="markdown-content">${marked.parse(message)}</span>
+            </div>
+        `;
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+    // Send message to server
+    function sendMessage() {
+        const input = document.getElementById('user-input');
+        const message = input.value.trim();
+        
+        if (message && currentSubject) {
+            // Add user message to chat
+            addUserMessage(message);
+            
+            // Clear input
+            input.value = '';
+            
+            // Send to server
+            fetch('/subject-chat/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: JSON.stringify({
+                    message: message,
+                    subject: currentSubject
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    addBotMessage(data.response);
+                } else {
+                    addBotMessage(`Error: ${data.response}`);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                addBotMessage('Sorry, there was an error processing your request.');
+            });
+        }
+    }
+    
+    // Handle Enter key press
+    document.getElementById('user-input').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            sendMessage();
+        }
+    });
+</script>
+{% endblock %}

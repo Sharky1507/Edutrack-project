@@ -1,0 +1,415 @@
+{% extends 'base.html' %}
+
+{% block title %}Learning Analytics | EduTrack{% endblock %}
+
+{% block extra_css %}
+<style>
+    .analytics-container {
+        max-width: 1100px;
+        margin: 0 auto;
+        padding: 2rem 1rem;
+    }
+    
+    .analytics-section {
+        background: white;
+        border-radius: 12px;
+        padding: 1.5rem;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        margin-bottom: 2rem;
+    }
+    
+    .section-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+    }
+    
+    .section-title {
+        font-size: 1.25rem;
+        font-weight: 600;
+    }
+    
+    .chart-container {
+        height: 300px;
+        width: 100%;
+        margin-bottom: 1rem;
+    }
+    
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+    }
+    
+    .stat-card {
+        background: #f8fafc;
+        border-radius: 8px;
+        padding: 1rem;
+        text-align: center;
+    }
+    
+    .stat-value {
+        font-size: 1.5rem;
+        font-weight: 600;
+        color: var(--primary);
+        margin-bottom: 0.25rem;
+    }
+    
+    .stat-label {
+        color: #64748b;
+        font-size: 0.9rem;
+    }
+    
+    .pie-chart-container {
+        height: 250px;
+        width: 100%;
+    }
+    
+    .weekly-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 1rem;
+    }
+    
+    .weekly-table th,
+    .weekly-table td {
+        padding: 0.75rem;
+        text-align: left;
+        border-bottom: 1px solid #e2e8f0;
+    }
+    
+    .weekly-table th {
+        font-weight: 600;
+        color: #334155;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="analytics-container">
+    <h1><i class="fas fa-chart-pie"></i> Learning Analytics</h1>
+    <p class="text-muted">Detailed insights into your learning patterns and progress</p>
+    
+    <!-- Overall Statistics -->
+    <div class="analytics-section">
+        <div class="section-header">
+            <h2 class="section-title"><i class="fas fa-tachometer-alt"></i> Overall Statistics</h2>
+        </div>
+        
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-value">{{ metrics.total_time_spent|floatformat:0 }}</div>
+                <div class="stat-label">Total Minutes Spent</div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-value">{{ metrics.resources_completed }}</div>
+                <div class="stat-label">Resources Completed</div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-value">{{ metrics.longest_streak }}</div>
+                <div class="stat-label">Longest Streak (Days)</div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-value">{{ metrics.current_streak }}</div>
+                <div class="stat-label">Current Streak</div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <!-- Category Distribution -->
+        <div class="col-md-6">
+            <div class="analytics-section">
+                <div class="section-header">
+                    <h2 class="section-title"><i class="fas fa-folder"></i> Category Focus</h2>
+                </div>
+                
+                <div class="pie-chart-container">
+                    <canvas id="categoryChart"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Difficulty Distribution -->
+        <div class="col-md-6">
+            <div class="analytics-section">
+                <div class="section-header">
+                    <h2 class="section-title"><i class="fas fa-signal"></i> Difficulty Levels</h2>
+                </div>
+                
+                <div class="pie-chart-container">
+                    <canvas id="difficultyChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Time Distribution -->
+    <div class="analytics-section">
+        <div class="section-header">
+            <h2 class="section-title"><i class="fas fa-clock"></i> Study Time Distribution</h2>
+        </div>
+        
+        <div class="chart-container">
+            <canvas id="timeDistChart"></canvas>
+        </div>
+    </div>
+    
+    <!-- Weekly Progress -->
+    <div class="analytics-section">
+        <div class="section-header">
+            <h2 class="section-title"><i class="fas fa-calendar-week"></i> Weekly Progress</h2>
+        </div>
+        
+        <div class="chart-container">
+            <canvas id="weeklyChart"></canvas>
+        </div>
+        
+        <table class="weekly-table">
+            <thead>
+                <tr>
+                    <th>Week</th>
+                    <th>Minutes Studied</th>
+                    <th>Sessions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for week in weekly_averages %}
+                    <tr>
+                        <td>{{ week.week }}</td>
+                        <td>{{ week.minutes }}</td>
+                        <td>{{ week.sessions }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    
+    <!-- Subject Distribution -->
+    <div class="analytics-section">
+        <div class="section-header">
+            <h2 class="section-title"><i class="fas fa-book-open"></i> Subject Distribution</h2>
+        </div>
+        
+        <div class="chart-container">
+            <canvas id="subjectChart"></canvas>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Category distribution chart
+        const categoryCtx = document.getElementById('categoryChart').getContext('2d');
+        const categoryData = [
+            {% for category in top_categories %}
+                {
+                    label: "{{ category.name }}",
+                    value: {{ category.count }}
+                },
+            {% endfor %}
+        ];
+        
+        new Chart(categoryCtx, {
+            type: 'doughnut',
+            data: {
+                labels: categoryData.map(item => item.label),
+                datasets: [{
+                    data: categoryData.map(item => item.value),
+                    backgroundColor: [
+                        'rgba(14, 165, 233, 0.7)',
+                        'rgba(79, 70, 229, 0.7)',
+                        'rgba(16, 185, 129, 0.7)',
+                        'rgba(245, 158, 11, 0.7)',
+                        'rgba(239, 68, 68, 0.7)'
+                    ],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'right',
+                    }
+                }
+            }
+        });
+        
+        // Difficulty distribution chart
+        const difficultyCtx = document.getElementById('difficultyChart').getContext('2d');
+        const difficultyData = {
+            beginner: {{ difficulty_data.beginner }},
+            intermediate: {{ difficulty_data.intermediate }},
+            advanced: {{ difficulty_data.advanced }}
+        };
+        
+        new Chart(difficultyCtx, {
+            type: 'pie',
+            data: {
+                labels: ['Beginner', 'Intermediate', 'Advanced'],
+                datasets: [{
+                    data: [
+                        difficultyData.beginner,
+                        difficultyData.intermediate,
+                        difficultyData.advanced
+                    ],
+                    backgroundColor: [
+                        'rgba(16, 185, 129, 0.7)',
+                        'rgba(14, 165, 233, 0.7)',
+                        'rgba(239, 68, 68, 0.7)'
+                    ],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+            }
+        });
+        
+        // Time distribution chart
+        const timeDistCtx = document.getElementById('timeDistChart').getContext('2d');
+        const timeDistData = {{ time_distribution|safe }};
+        
+        const hours = Object.keys(timeDistData);
+        const minutesPerHour = Object.values(timeDistData);
+        
+        new Chart(timeDistCtx, {
+            type: 'bar',
+            data: {
+                labels: hours,
+                datasets: [{
+                    label: 'Study Minutes by Time of Day',
+                    data: minutesPerHour,
+                    backgroundColor: 'rgba(79, 70, 229, 0.6)',
+                    borderColor: 'rgba(79, 70, 229, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Minutes'
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Hour of Day'
+                        }
+                    }
+                }
+            }
+        });
+        
+        // Weekly progress chart
+        const weeklyCtx = document.getElementById('weeklyChart').getContext('2d');
+        const weeklyData = [
+            {% for week in weekly_averages %}
+                {
+                    week: "{{ week.week }}",
+                    minutes: {{ week.minutes }},
+                    sessions: {{ week.sessions }}
+                },
+            {% endfor %}
+        ];
+        
+        new Chart(weeklyCtx, {
+            type: 'bar',
+            data: {
+                labels: weeklyData.map(item => item.week),
+                datasets: [{
+                    label: 'Study Minutes',
+                    data: weeklyData.map(item => item.minutes),
+                    backgroundColor: 'rgba(14, 165, 233, 0.6)',
+                    borderColor: 'rgba(14, 165, 233, 1)',
+                    borderWidth: 1,
+                    yAxisID: 'y'
+                }, {
+                    label: 'Number of Sessions',
+                    data: weeklyData.map(item => item.sessions),
+                    backgroundColor: 'rgba(16, 185, 129, 0.6)',
+                    borderColor: 'rgba(16, 185, 129, 1)',
+                    borderWidth: 1,
+                    type: 'line',
+                    yAxisID: 'y1'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        position: 'left',
+                        title: {
+                            display: true,
+                            text: 'Minutes'
+                        }
+                    },
+                    y1: {
+                        beginAtZero: true,
+                        position: 'right',
+                        grid: {
+                            drawOnChartArea: false
+                        },
+                        title: {
+                            display: true,
+                            text: 'Sessions'
+                        }
+                    }
+                }
+            }
+        });
+        
+        // Subject distribution chart
+        const subjectCtx = document.getElementById('subjectChart').getContext('2d');
+        const subjectData = [
+            {% for subject in subject_distribution %}
+                {
+                    label: "{{ subject.resource__subjects__name }}",
+                    value: {{ subject.count }}
+                },
+            {% endfor %}
+        ];
+        
+        new Chart(subjectCtx, {
+            type: 'horizontalBar',
+            data: {
+                labels: subjectData.map(item => item.label),
+                datasets: [{
+                    label: 'Resources per Subject',
+                    data: subjectData.map(item => item.value),
+                    backgroundColor: 'rgba(79, 70, 229, 0.6)',
+                    borderColor: 'rgba(79, 70, 229, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: {
+                        beginAtZero: true,
+                    }
+                }
+            }
+        });
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,612 @@
+{% extends 'base.html' %}
+{% load app_filters %}
+
+{% block title %}{{ resource.title }} | EduTrack Resources{% endblock %}
+
+{% block extra_css %}
+<style>
+    .resource-detail-container {
+        max-width: 1100px;
+        margin: 0 auto;
+        padding: 2rem 1rem;
+    }
+    
+    .resource-header {
+        margin-bottom: 2rem;
+    }
+    
+    .resource-title {
+        font-size: 2rem;
+        font-weight: 700;
+        color: var(--dark);
+        margin-bottom: 0.5rem;
+    }
+    
+    .resource-meta {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .meta-item {
+        display: flex;
+        align-items: center;
+        color: #64748b;
+        font-size: 0.9rem;
+    }
+    
+    .meta-item i {
+        margin-right: 0.5rem;
+    }
+    
+    .resource-description {
+        margin-bottom: 2rem;
+        font-size: 1.1rem;
+        line-height: 1.6;
+        color: #334155;
+    }
+    
+    .badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.25rem 0.75rem;
+        border-radius: 9999px;
+        font-size: 0.8rem;
+        font-weight: 500;
+    }
+    
+    .resource-content {
+        display: grid;
+        grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+        gap: 2rem;
+    }
+    
+    .embed-container {
+        position: relative;
+        overflow: hidden;
+        width: 100%;
+        padding-top: 56.25%; /* 16:9 Aspect Ratio */
+        border-radius: 8px;
+        margin-bottom: 2rem;
+    }
+    
+    .embed-container iframe {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        border: none;
+    }
+    
+    .resource-sidebar {
+        background: white;
+        border-radius: 12px;
+        padding: 1.5rem;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    
+    .sidebar-section {
+        margin-bottom: 2rem;
+    }
+    
+    .sidebar-title {
+        font-size: 1.1rem;
+        font-weight: 600;
+        margin-bottom: 1rem;
+        color: var(--dark);
+        border-bottom: 1px solid #e2e8f0;
+        padding-bottom: 0.5rem;
+    }
+    
+    .resource-cta {
+        margin: 2rem 0;
+        text-align: center;
+    }
+    
+    .related-resources {
+        margin-top: 3rem;
+    }
+    
+    .related-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+        gap: 1.5rem;
+    }
+    
+    /* Progress tracking styles */
+    .progress-container {
+        margin-top: 1rem;
+    }
+    
+    .progress-bar {
+        height: 12px;
+        background: #e2e8f0;
+        border-radius: 6px;
+        overflow: hidden;
+        margin-bottom: 0.5rem;
+    }
+    
+    .progress-fill {
+        height: 100%;
+        background: var(--primary);
+        width: 0%;
+        transition: width 0.5s ease;
+    }
+    
+    .progress-labels {
+        display: flex;
+        justify-content: space-between;
+        font-size: 0.85rem;
+        color: #64748b;
+    }
+    
+    .status-selector {
+        margin-top: 1rem;
+        display: flex;
+        justify-content: space-between;
+        gap: 0.5rem;
+    }
+    
+    .status-btn {
+        flex: 1;
+        padding: 0.5rem;
+        border: 1px solid #e2e8f0;
+        border-radius: 4px;
+        background: white;
+        font-size: 0.9rem;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+    
+    .status-btn.active {
+        background: var(--primary);
+        color: white;
+        border-color: var(--primary);
+    }
+    
+    .notes-container {
+        margin-top: 1rem;
+    }
+    
+    .session-info {
+        margin-top: 0.5rem;
+        font-size: 0.85rem;
+        color: #64748b;
+    }
+
+    @media (max-width: 768px) {
+        .resource-content {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="resource-detail-container">
+    <div class="resource-header">
+        <div class="resource-meta">
+            <a href="{% url 'resource_library' %}" class="btn btn-outline-primary">
+                <i class="fas fa-arrow-left"></i> Back to Library
+            </a>
+            
+            {% if resource.category %}
+                <span class="badge" style="background: #f1f5f9; color: #64748b;">
+                    <i class="{{ resource.category.icon }}"></i> {{ resource.category.name }}
+                </span>
+            {% endif %}
+            
+            <span class="badge 
+                {% if resource.difficulty == 'beginner' %}badge-success{% elif resource.difficulty == 'advanced' %}badge-warning{% else %}badge-primary{% endif %}">
+                <i class="fas fa-signal"></i> {{ resource.get_difficulty_display }}
+            </span>
+            
+            <span class="badge" style="background: #f1f5f9; color: #64748b;">
+                <i class="fas fa-file-alt"></i> {{ resource.get_resource_type_display }}
+            </span>
+        </div>
+        
+        <h1 class="resource-title">{{ resource.title }}</h1>
+        
+        <div class="resource-meta">
+            <span class="meta-item">
+                <i class="far fa-calendar"></i> Added {{ resource.upload_date|date:"M d, Y" }}
+            </span>
+            
+            <span class="meta-item">
+                <i class="far fa-eye"></i> {{ interaction.view_count }} view{{ interaction.view_count|pluralize }}
+            </span>
+            
+            {% for subject in resource.subjects.all %}
+                <span class="badge" style="background: #e0f2fe; color: #0369a1;">
+                    {{ subject.name }}
+                </span>
+            {% endfor %}
+        </div>
+    </div>
+    
+    <div class="resource-content">
+        <div class="resource-main">
+            <div class="resource-description">
+                {{ resource.description|linebreaks }}
+            </div>
+            
+            <div class="resource-embed">
+                {% if resource.resource_type == 'video' and 'youtube.com' in resource.url or 'youtu.be' in resource.url %}
+                    <div class="embed-container">
+                        <iframe src="{{ resource.url|youtube_embed_url }}" allowfullscreen></iframe>
+                    </div>
+                {% else %}
+                    <div class="resource-cta">
+                        <a href="{{ resource.url }}" target="_blank" class="btn btn-primary btn-lg">
+                            <i class="fas fa-external-link-alt"></i> 
+                            {% if resource.resource_type == 'article' %}
+                                Read Article
+                            {% elif resource.resource_type == 'exercise' %}
+                                Start Exercise
+                            {% elif resource.resource_type == 'book' %}
+                                View Book
+                            {% elif resource.resource_type == 'quiz' %}
+                                Take Quiz
+                            {% else %}
+                                Access Resource
+                            {% endif %}
+                        </a>
+                        <p class="mt-2 text-muted small">This will open in a new tab</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="resource-sidebar">
+            <!-- Progress Tracking Section -->
+            <div class="sidebar-section">
+                <h3 class="sidebar-title">
+                    <i class="fas fa-chart-line"></i> Your Progress
+                </h3>
+                
+                <div class="progress-container">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progressBar" style="width: {{ progress.progress_percent|default:0 }}%"></div>
+                    </div>
+                    <div class="progress-labels">
+                        <span id="progressPercent">{{ progress.progress_percent|default:0 }}% complete</span>
+                        <span id="timeSpent">{{ progress.time_spent|default:0|floatformat:0 }} sec</span>
+                    </div>
+                </div>
+                
+                <div class="status-selector">
+                    <button class="status-btn {% if progress.status == 'not_started' or not progress %}active{% endif %}" data-status="not_started">
+                        Not Started
+                    </button>
+                    <button class="status-btn {% if progress.status == 'in_progress' %}active{% endif %}" data-status="in_progress">
+                        In Progress
+                    </button>
+                    <button class="status-btn {% if progress.status == 'completed' %}active{% endif %}" data-status="completed">
+                        Completed
+                    </button>
+                </div>
+                
+                <div class="notes-container">
+                    <label for="resourceNotes">Notes:</label>
+                    <textarea id="resourceNotes" class="form-control" rows="4">{{ progress.notes|default:'' }}</textarea>
+                </div>
+                
+                <div class="mt-3 text-center">
+                    <button id="saveProgressBtn" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Save Progress
+                    </button>
+                </div>
+                
+                <div id="sessionInfo" class="session-info">
+                    Time tracking active: <span id="sessionTime">0</span> seconds
+                </div>
+            </div>
+            
+            <!-- Interaction Buttons -->
+            <div class="sidebar-section">
+                <h3 class="sidebar-title">
+                    <i class="fas fa-bookmark"></i> Actions
+                </h3>
+                
+                <div class="d-grid gap-2">
+                    <button id="saveResourceBtn" class="btn {% if interaction.saved %}btn-success{% else %}btn-outline-success{% endif %} btn-block">
+                        <i class="{% if interaction.saved %}fas{% else %}far{% endif %} fa-bookmark"></i>
+                        {% if interaction.saved %}Saved{% else %}Save{% endif %}
+                    </button>
+                    
+                    <div class="rating-container">
+                        <p class="mb-1">Rate this resource:</p>
+                        <div class="star-rating text-center">
+                            {% for i in "12345" %}
+                                <i class="{% if interaction.rated and interaction.rated >= forloop.counter %}fas{% else %}far{% endif %} fa-star" data-rating="{{ forloop.counter }}"></i>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Learning Style Match -->
+            <div class="sidebar-section">
+                <h3 class="sidebar-title">
+                    <i class="fas fa-brain"></i> Learning Styles
+                </h3>
+                
+                <div class="learning-styles">
+                    {% for style in resource.learning_styles %}
+                        <div class="learning-style-item">
+                            <span class="badge {% if user.userprofile.learning_style == style %}badge-success{% else %}badge-primary{% endif %}">
+                                {{ style|title }}
+                            </span>
+                            {% if user.userprofile.learning_style == style %}
+                                <span class="match-indicator"><i class="fas fa-check"></i> Matches your style</span>
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Related Resources -->
+    {% if related_resources %}
+    <div class="related-resources">
+        <h2 class="section-title">
+            <i class="fas fa-link"></i> Related Resources
+        </h2>
+        
+        <div class="related-grid">
+            {% for resource in related_resources %}
+                {% include 'resource_card.html' with resource=resource %}
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Session tracking variables
+        let sessionStartTime = Date.now();
+        let sessionDuration = 0;
+        let sessionInterval;
+        let sessionId = null;
+        let resourceId = {{ resource.id }};
+        
+        // Start the timer
+        function startSessionTimer() {
+            sessionStartTime = Date.now();
+            sessionInterval = setInterval(function() {
+                // Calculate elapsed time in seconds
+                const elapsedTime = Math.floor((Date.now() - sessionStartTime) / 1000);
+                document.getElementById('sessionTime').textContent = elapsedTime;
+                sessionDuration = elapsedTime;
+            }, 1000);
+        }
+        
+        // Initialize progress tracking
+        startSessionTimer();
+        
+        // Status buttons
+        const statusButtons = document.querySelectorAll('.status-btn');
+        statusButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                statusButtons.forEach(btn => btn.classList.remove('active'));
+                this.classList.add('active');
+            });
+        });
+        
+        // Save progress button
+        document.getElementById('saveProgressBtn').addEventListener('click', function() {
+            // Get the active status
+            const activeStatusBtn = document.querySelector('.status-btn.active');
+            const status = activeStatusBtn ? activeStatusBtn.dataset.status : 'not_started';
+            
+            // Get progress percentage from slider or input
+            const progressPercent = parseInt(document.getElementById('progressBar').style.width) || 0;
+            
+            // Get notes
+            const notes = document.getElementById('resourceNotes').value;
+            
+            // Prepare data for API
+            const progressData = {
+                resource_id: resourceId,
+                progress_percent: progressPercent,
+                time_spent: sessionDuration,
+                status: status,
+                notes: notes,
+            };
+            
+            // If we have a session ID, include it
+            if (sessionId) {
+                progressData.session_id = sessionId;
+            }
+            
+            // Send progress update
+            fetch('/update-resource-progress/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: JSON.stringify(progressData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    // Update UI with new progress
+                    document.getElementById('progressBar').style.width = data.progress_percent + '%';
+                    document.getElementById('progressPercent').textContent = data.progress_percent + '% complete';
+                    
+                    // Save session ID for updates
+                    sessionId = data.session_id;
+                    
+                    // Reset timer
+                    clearInterval(sessionInterval);
+                    startSessionTimer();
+                    
+                    // Show success message
+                    alert('Progress saved successfully!');
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred while saving progress.');
+            });
+        });
+        
+        // Save/unsave resource 
+        document.getElementById('saveResourceBtn').addEventListener('click', function() {
+            fetch('/resources/save/{{ resource.id }}/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    const btn = document.getElementById('saveResourceBtn');
+                    if (data.saved) {
+                        btn.innerHTML = '<i class="fas fa-bookmark"></i> Saved';
+                        btn.classList.remove('btn-outline-success');
+                        btn.classList.add('btn-success');
+                    } else {
+                        btn.innerHTML = '<i class="far fa-bookmark"></i> Save';
+                        btn.classList.remove('btn-success');
+                        btn.classList.add('btn-outline-success');
+                    }
+                }
+            });
+        });
+        
+        // Rate resource
+        const starRating = document.querySelectorAll('.star-rating i');
+        starRating.forEach(star => {
+            star.addEventListener('click', function() {
+                const rating = this.dataset.rating;
+                
+                // Submit rating
+                const formData = new FormData();
+                formData.append('rating', rating);
+                
+                fetch('/resources/rate/{{ resource.id }}/', {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        // Update UI
+                        starRating.forEach((s, index) => {
+                            if (index < rating) {
+                                s.classList.remove('far');
+                                s.classList.add('fas');
+                            } else {
+                                s.classList.remove('fas');
+                                s.classList.add('far');
+                            }
+                        });
+                    }
+                });
+            });
+        });
+        
+        // Handle page unload to save progress
+        window.addEventListener('beforeunload', function() {
+            // Stop the interval
+            clearInterval(sessionInterval);
+            
+            // Send a final update if session was active
+            if (sessionDuration > 0) {
+                const activeStatusBtn = document.querySelector('.status-btn.active');
+                const status = activeStatusBtn ? activeStatusBtn.dataset.status : 'not_started';
+                const progressPercent = parseInt(document.getElementById('progressBar').style.width) || 0;
+                const notes = document.getElementById('resourceNotes').value;
+                
+                // Use sendBeacon for reliable delivery during page unload
+                const progressData = {
+                    resource_id: resourceId,
+                    progress_percent: progressPercent,
+                    time_spent: sessionDuration,
+                    status: status,
+                    notes: notes
+                };
+                
+                if (sessionId) {
+                    progressData.session_id = sessionId;
+                }
+                
+                navigator.sendBeacon('/update-resource-progress/', JSON.stringify(progressData));
+            }
+        });
+
+        // Progress updater for videos (auto-track YouTube progress)
+        if (document.querySelector('.embed-container iframe')) {
+            let player;
+            let videoLoaded = false;
+            
+            // Load YouTube API
+            const tag = document.createElement('script');
+            tag.src = "https://www.youtube.com/iframe_api";
+            const firstScriptTag = document.getElementsByTagName('script')[0];
+            firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+            
+            // When YouTube API is ready
+            window.onYouTubeIframeAPIReady = function() {
+                const iframe = document.querySelector('.embed-container iframe');
+                if (!iframe) return;
+                
+                player = new YT.Player(iframe, {
+                    events: {
+                        'onStateChange': onPlayerStateChange,
+                        'onReady': onPlayerReady
+                    }
+                });
+            };
+            
+            function onPlayerReady(event) {
+                videoLoaded = true;
+            }
+            
+            function onPlayerStateChange(event) {
+                // Update progress when video is paused or ended
+                if (event.data === YT.PlayerState.PAUSED || event.data === YT.PlayerState.ENDED) {
+                    if (!videoLoaded) return;
+                    
+                    // Calculate progress percent
+                    const duration = player.getDuration();
+                    const currentTime = player.getCurrentTime();
+                    const percent = Math.round((currentTime / duration) * 100);
+                    
+                    // Update the progress bar
+                    document.getElementById('progressBar').style.width = percent + '%';
+                    document.getElementById('progressPercent').textContent = percent + '% complete';
+                    
+                    // Auto-set status
+                    if (percent >= 90) {
+                        // Set as completed if watched 90%+
+                        statusButtons.forEach(btn => btn.classList.remove('active'));
+                        document.querySelector('.status-btn[data-status="completed"]').classList.add('active');
+                    } else if (percent > 0) {
+                        // Set as in progress
+                        statusButtons.forEach(btn => btn.classList.remove('active'));
+                        document.querySelector('.status-btn[data-status="in_progress"]').classList.add('active');
+                    }
+                }
+            }
+        }
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,45 @@
+<a href="{% url 'resource_detail' resource_id=resource.id %}" class="resource-card" data-type="{{ resource.resource_type }}">
+    {% if resource.thumbnail %}
+        <div class="resource-thumbnail" style="background-image: url('{{ resource.thumbnail }}')"></div>
+    {% else %}
+        <div class="resource-thumbnail">
+            {% if resource.resource_type == 'video' %}
+                <i class="fas fa-video"></i>
+            {% elif resource.resource_type == 'article' %}
+                <i class="fas fa-newspaper"></i>
+            {% elif resource.resource_type == 'book' %}
+                <i class="fas fa-book"></i>
+            {% elif resource.resource_type == 'exercise' %}
+                <i class="fas fa-tasks"></i>
+            {% elif resource.resource_type == 'quiz' %}
+                <i class="fas fa-question-circle"></i>
+            {% elif resource.resource_type == 'tool' %}
+                <i class="fas fa-tools"></i>
+            {% else %}
+                <i class="fas fa-file"></i>
+            {% endif %}
+        </div>
+    {% endif %}
+    
+    <div class="resource-content">
+        <h3 class="resource-title">{{ resource.title }}</h3>
+        
+        <div class="resource-meta">
+            {% if resource.category %}
+                <span class="tag">{{ resource.category.name }}</span>
+            {% endif %}
+            
+            <span class="badge 
+                {% if resource.difficulty == 'beginner' %}badge-success{% elif resource.difficulty == 'advanced' %}badge-warning{% else %}badge-primary{% endif %}">
+                {{ resource.get_difficulty_display }}
+            </span>
+        </div>
+        
+        <p class="resource-description">{{ resource.description|truncatechars:100 }}</p>
+        
+        <div class="resource-footer">
+            <span class="tag">{{ resource.get_resource_type_display }}</span>
+            <span class="time-ago">{{ resource.upload_date|timesince }}</span>
+        </div>
+    </div>
+</a>
